@@ -1,0 +1,130 @@
+// Prisma schema for Farm-to-Table Direct (analytics-focused)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: SQLite connector does not support native enums. Use string fields.
+
+model User {
+  id             String         @id @default(cuid())
+  email          String         @unique
+  name           String?
+  role           String         @default("CONSUMER")
+  sellerProfile  SellerProfile?
+  orders         Order[]
+  sessions       Session[]
+  createdAt      DateTime       @default(now())
+}
+
+model SellerProfile {
+  id         String     @id @default(cuid())
+  userId     String     @unique
+  user       User       @relation(fields: [userId], references: [id])
+  storeName  String
+  city       String?
+  state      String?
+  products   Product[]
+  sessions   Session[]
+  orders     Order[]
+  pageViews  PageView[]
+  cartEvents AddToCartEvent[]
+  createdAt  DateTime   @default(now())
+}
+
+model Product {
+  id            String           @id @default(cuid())
+  sellerId      String
+  seller        SellerProfile    @relation(fields: [sellerId], references: [id])
+  name          String
+  description   String
+  category      String
+  isValueAdded  Boolean          @default(false)
+  priceCents    Int
+  unit          String
+  inventory     Int              @default(0)
+  images        ProductImage[]
+  orderItems    OrderItem[]
+  pageViews     PageView[]
+  addToCarts    AddToCartEvent[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id                 String        @id @default(cuid())
+  consumerId         String?
+  consumer           User?         @relation(fields: [consumerId], references: [id])
+  sellerId           String
+  seller             SellerProfile @relation(fields: [sellerId], references: [id])
+  status             String        @default("NEW")
+  totalAmountCents   Int
+  sessionId          String?
+  session            Session?      @relation(fields: [sessionId], references: [id])
+  items              OrderItem[]
+  createdAt          DateTime      @default(now())
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  productId      String
+  quantity       Int
+  unitPriceCents Int
+  order          Order    @relation(fields: [orderId], references: [id])
+  product        Product  @relation(fields: [productId], references: [id])
+}
+
+model Session {
+  id         String        @id @default(cuid())
+  sellerId   String
+  seller     SellerProfile @relation(fields: [sellerId], references: [id])
+  userId     String?
+  user       User?         @relation(fields: [userId], references: [id])
+  ip         String?
+  userAgent  String?
+  city       String?
+  region     String?
+  createdAt  DateTime      @default(now())
+  pageViews  PageView[]
+  carts      AddToCartEvent[]
+  orders     Order[]
+}
+
+model PageView {
+  id         String     @id @default(cuid())
+  sessionId  String
+  session    Session    @relation(fields: [sessionId], references: [id])
+  sellerId   String
+  seller     SellerProfile @relation(fields: [sellerId], references: [id])
+  productId  String?
+  product    Product?   @relation(fields: [productId], references: [id])
+  path       String
+  createdAt  DateTime   @default(now())
+}
+
+model AddToCartEvent {
+  id         String   @id @default(cuid())
+  sessionId  String
+  session    Session  @relation(fields: [sessionId], references: [id])
+  sellerId   String
+  seller     SellerProfile @relation(fields: [sellerId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+// Back-relations for SellerProfile to analytics models
+
