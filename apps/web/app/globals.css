@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #fffef8;
+}
+
+body {
+  background: var(--bg);
+}
+
+.rustic-card {
+  @apply bg-white shadow rounded-lg border border-farm-earth/20;
+}
